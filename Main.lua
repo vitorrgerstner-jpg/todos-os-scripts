@@ -203,7 +203,7 @@ local function fixLighting()
 end
 
 -- ==================== 6. Slope Boost ====================
-local SLOPE_BOOST = 170
+local SLOPE_BOOST = 165
 local holdingS = false
 local holdingAorD = false
 
