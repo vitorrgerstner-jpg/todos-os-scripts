@@ -1,5 +1,5 @@
 -- =============================================
--- MM2 SCRIPT COMPLETO - Sem bloqueio geral de animações
+-- MM2 SCRIPT COMPLETO OTIMIZADO (9 scripts)
 -- =============================================
 
 local Players = game:GetService("Players")
@@ -18,9 +18,7 @@ local function aplicarSistema(character)
     local humanoid = character:WaitForChild("Humanoid")
     local rootPart = character:WaitForChild("HumanoidRootPart")
     
-    if character:FindFirstChild("GlitchPart") then
-        character.GlitchPart:Destroy()
-    end
+    if character:FindFirstChild("GlitchPart") then character.GlitchPart:Destroy() end
 
     local glitchPart = Instance.new("Part")
     glitchPart.Name = "GlitchPart"
@@ -39,22 +37,7 @@ local function aplicarSistema(character)
     weld.C0 = CFrame.new(0,0,0)
     weld.Parent = glitchPart
 
-    local massaTravada = false
     local escalando = false
-
-    local function setOffset(z)
-        weld.C0 = CFrame.new(0,0,z)
-    end
-
-    local function deslocarMassa()
-        massaTravada = true
-        setOffset(13.5)
-    end
-
-    local function resetarMassa()
-        massaTravada = false
-        setOffset(0)
-    end
 
     humanoid.StateChanged:Connect(function(_, newState)
         escalando = (newState == Enum.HumanoidStateType.Climbing)
@@ -63,35 +46,23 @@ local function aplicarSistema(character)
     character.ChildAdded:Connect(function(obj)
         if obj:IsA("Tool") then
             if escalando then
-                deslocarMassa()
+                weld.C0 = CFrame.new(0,0,13.5)
             else
-                resetarMassa()
+                weld.C0 = CFrame.new(0,0,0)
             end
         end
     end)
 
     character.ChildRemoved:Connect(function(obj)
-        if obj:IsA("Tool") and not escalando then
-            resetarMassa()
+        if obj:IsA("Tool") then
+            weld.C0 = CFrame.new(0,0,0)
         end
-    end)
-
-    local backpack = player:WaitForChild("Backpack")
-    backpack.ChildAdded:Connect(function(obj)
-        if obj:IsA("Tool") and not escalando then resetarMassa() end
-    end)
-    backpack.ChildRemoved:Connect(function(obj)
-        if obj:IsA("Tool") and not escalando then resetarMassa() end
     end)
 end
 
--- ==================== 3. Gun System (Mantido) ====================
-local SOUND_ID = "rbxassetid://6968135315"
-local TARGET_TOOL_NAME = "Gun"
-local COOLDOWN_DURATION = 5
-
+-- ==================== 3. Gun System ====================
 local actionSound = Instance.new("Sound")
-actionSound.SoundId = SOUND_ID
+actionSound.SoundId = "rbxassetid://6968135315"
 actionSound.Volume = 1
 actionSound.Parent = SoundService
 
@@ -103,9 +74,8 @@ local function setupGunSystem(character)
     if animator then
         animator.AnimationPlayed:Connect(function(track)
             local tool = character:FindFirstChildOfClass("Tool")
-            local isHoldingGun = tool and tool.Name == TARGET_TOOL_NAME
-            local timeSinceUnequip = tick() - lastUnequippedTime
-            local withinCooldown = timeSinceUnequip <= COOLDOWN_DURATION
+            local isHoldingGun = (tool and tool.Name == "Gun")
+            local withinCooldown = (tick() - lastUnequippedTime) <= 5
 
             if isHoldingGun or withinCooldown then
                 if track.Priority == Enum.AnimationPriority.Action then
@@ -116,13 +86,13 @@ local function setupGunSystem(character)
     end
 
     character.ChildAdded:Connect(function(child)
-        if child:IsA("Tool") and child.Name == TARGET_TOOL_NAME then
+        if child:IsA("Tool") and child.Name == "Gun" then
             actionSound:Play()
         end
     end)
 
     character.ChildRemoved:Connect(function(child)
-        if child:IsA("Tool") and child.Name == TARGET_TOOL_NAME then
+        if child:IsA("Tool") and child.Name == "Gun" then
             actionSound:Play()
             lastUnequippedTime = tick()
         end
@@ -132,65 +102,58 @@ end
 -- ==================== 4. Skibidi Ghost Glitch ====================
 local currentOffset = CFrame.new(0, 0, 0)
 local activeGhost, activeWeld = nil, nil
-local cachedRoot, cachedTorso = nil, nil
 
 local function isGlitchTarget(child)
     if child:IsA("Tool") then return true end
-    return string.find(string.lower(child.Name), "radio") ~= nil
+    return string.find(string.lower(child.Name or ""), "radio") ~= nil
 end
 
-local function deployGhostGlitch()
-    local char = player.Character
+local function deployGhostGlitch(char)
     if not char then return end
-    cachedRoot = char:FindFirstChild("HumanoidRootPart")
-    cachedTorso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
-    if not cachedTorso or not cachedRoot then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    local torso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+    if not torso or not root then return end
 
-    local rawCF = cachedRoot.CFrame:ToObjectSpace(cachedTorso.CFrame)
+    local rawCF = root.CFrame:ToObjectSpace(torso.CFrame)
     currentOffset = CFrame.new(rawCF.Position * 1.9) * rawCF.Rotation
 
     if char:FindFirstChild("Skibidi_Ghost_Active") then
         char.Skibidi_Ghost_Active:Destroy()
     end
 
-    local newGhost = Instance.new("Part")
-    newGhost.Name = "Skibidi_Ghost_Active"
-    newGhost.Size = Vector3.new(1, 1, 1)
-    newGhost.CustomPhysicalProperties = PhysicalProperties.new(40, 0.7, 0.3, 1, 1)
-    newGhost.CFrame = cachedTorso.CFrame
-    newGhost.Transparency = 1
-    newGhost.CanCollide = false
-    newGhost.Parent = char
+    local ghost = Instance.new("Part")
+    ghost.Name = "Skibidi_Ghost_Active"
+    ghost.Size = Vector3.new(1,1,1)
+    ghost.CustomPhysicalProperties = PhysicalProperties.new(40, 0.7, 0.3, 1, 1)
+    ghost.Transparency = 1
+    ghost.CanCollide = false
+    ghost.Parent = char
 
     activeWeld = Instance.new("Weld")
-    activeWeld.Part0 = cachedTorso
-    activeWeld.Part1 = newGhost
+    activeWeld.Part0 = torso
+    activeWeld.Part1 = ghost
     activeWeld.C0 = currentOffset
-    activeWeld.Parent = newGhost
-    activeGhost = newGhost
+    activeWeld.Parent = ghost
+    activeGhost = ghost
 end
 
 local function setupGhostListeners(char)
-    if not char then return end
-    task.defer(deployGhostGlitch)
+    task.defer(function() deployGhostGlitch(char) end)
 
     char.ChildAdded:Connect(function(child)
         if isGlitchTarget(child) then
-            for _, part in ipairs(child:GetDescendants()) do
-                if part:IsA("BasePart") then part.Massless = true end
-            end
-            deployGhostGlitch()
+            deployGhostGlitch(char)
         end
     end)
 
     char.ChildRemoved:Connect(function(child)
         if isGlitchTarget(child) then
-            deployGhostGlitch()
+            deployGhostGlitch(char)
         end
     end)
 end
 
--- ==================== 5. Lighting Fix ====================
+-- ==================== 5. Lighting ====================
 local function fixLighting()
     for _, light in ipairs(workspace:GetDescendants()) do
         if light:IsA("PointLight") or light:IsA("SpotLight") or light:IsA("SurfaceLight") then
@@ -203,9 +166,8 @@ local function fixLighting()
 end
 
 -- ==================== 6. Slope Boost ====================
-local SLOPE_BOOST = 165
-local holdingS = false
-local holdingAorD = false
+local SLOPE_BOOST = 170
+local holdingS, holdingAorD = false, false
 
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.S then holdingS = true end
@@ -218,8 +180,8 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 local function setupSlope(character)
-    local humanoid = character:WaitForChild("Humanoid")
     local root = character:WaitForChild("HumanoidRootPart")
+    local humanoid = character:WaitForChild("Humanoid")
 
     local function isInclined()
         return root.CFrame.UpVector.Y < 0.7
@@ -227,8 +189,7 @@ local function setupSlope(character)
 
     humanoid.Jumping:Connect(function()
         if isInclined() and holdingS and holdingAorD then
-            root.AssemblyLinearVelocity = Vector3.new(0,0,0)
-            root.AssemblyLinearVelocity += Vector3.new(0, SLOPE_BOOST, 0)
+            root.AssemblyLinearVelocity = Vector3.new(0, SLOPE_BOOST, 0)
         end
     end)
 end
@@ -250,10 +211,9 @@ statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.SourceSansBold
 statusLabel.Text = "Sistema OFF ❌"
-statusLabel.Active = true
 statusLabel.Parent = screenGui
 
-local function atualizarPainelLag()
+local function atualizarPainel()
     if sistemaLagAtivo then
         statusLabel.Text = "Sistema ON 📶"
         statusLabel.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
@@ -269,16 +229,6 @@ local function simulateLag()
         NetworkSettings.IncomingReplicationLag = REPLICATION_LAG
         NetworkSettings.OutgoingReplicationLag = REPLICATION_LAG
     end)
-
-    local start = tick()
-    local connection = RunService.RenderStepped:Connect(function()
-        if tick() - start < LAG_DURATION then
-            task.wait(math.random(0.05, 0.15))
-        else
-            connection:Disconnect()
-        end
-    end)
-
     task.delay(LAG_DURATION, function()
         pcall(function()
             NetworkSettings.IncomingReplicationLag = 0
@@ -287,7 +237,7 @@ local function simulateLag()
     end)
 end
 
--- ==================== 8. Disable Retargeting ====================
+-- ==================== 8. Retargeting ====================
 game.Workspace.Retargeting = Enum.AnimatorRetargetingMode.Disabled
 
 -- ==================== Inicialização ====================
@@ -305,43 +255,24 @@ player.CharacterAdded:Connect(function(char)
     setupSlope(char)
 end)
 
--- Tecla R = Fake Lag
+-- Tecla R - Fake Lag
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Enum.KeyCode.R then
         sistemaLagAtivo = not sistemaLagAtivo
-        atualizarPainelLag()
-        if not sistemaLagAtivo then
-            pcall(function()
-                NetworkSettings.IncomingReplicationLag = 0
-                NetworkSettings.OutgoingReplicationLag = 0
-            end)
-        end
+        atualizarPainel()
+        if sistemaLagAtivo then simulateLag() end
     end
-end)
-
--- Monitor de mortes para lag
-Players.PlayerAdded:Connect(function(plr)
-    plr.CharacterAdded:Connect(function(char)
-        local hum = char:WaitForChild("Humanoid", 5)
-        if hum then hum.Died:Connect(simulateLag) end
-    end)
 end)
 
 -- Lighting
 fixLighting()
-workspace.DescendantAdded:Connect(function(desc)
-    if desc:IsA("PointLight") or desc:IsA("SpotLight") or desc:IsA("SurfaceLight") then
-        task.wait(0.1)
-        fixLighting()
-    end
-end)
 
--- Heartbeat Ghost
+-- Heartbeat (mais leve)
 RunService.Heartbeat:Connect(function()
     if activeWeld then
         activeWeld.C0 = currentOffset
-    elseif player.Character and (not activeGhost or activeGhost.Parent ~= player.Character) then
-        deployGhostGlitch()
     end
 end)
+
+print("✅ Todos os 9 scripts carregados (otimizado)")
