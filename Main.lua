@@ -195,8 +195,8 @@ local function setupSlope(character)
 end
 
 -- ==================== 7. Fake Lag (Tecla R) ====================
-local LAG_DURATION = 0.6
-local REPLICATION_LAG = 0.7
+local LAG_DURATION = 0.9
+local REPLICATION_LAG = 0.9
 local sistemaLagAtivo = false
 
 local screenGui = Instance.new("ScreenGui")
